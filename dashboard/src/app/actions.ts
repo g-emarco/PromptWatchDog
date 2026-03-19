@@ -4,7 +4,6 @@ import { firestore } from '@/utils/firestore';
 import { Prompt, CreatePromptInput, UpdatePromptInput } from '@/types';
 import { DocumentSnapshot, DocumentData } from '@google-cloud/firestore';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 
 // Helper to convert Firestore doc to Prompt
 const mapDocToPrompt = (doc: DocumentSnapshot<DocumentData>): Prompt => {
@@ -57,7 +56,6 @@ export async function createPromptAction(input: CreatePromptInput): Promise<void
     }
 
     revalidatePath('/');
-    redirect('/');
 }
 
 export async function updatePromptAction(id: string, input: UpdatePromptInput): Promise<void> {
@@ -72,7 +70,6 @@ export async function updatePromptAction(id: string, input: UpdatePromptInput): 
     }
 
     revalidatePath('/');
-    redirect('/');
 }
 
 
@@ -88,9 +85,9 @@ export async function deletePromptAction(id: string): Promise<void> {
 
 export async function deployPromptAction(id: string): Promise<void> {
     try {
-        // TODO: Trigger actual Cloud Build / Cloud Run deployment here
+        // The runner picks up 'active' prompts from Firestore
         await firestore.collection('prompts').doc(id).update({
-            status: 'deploying',
+            status: 'active',
             lastDeployedAt: new Date().toISOString(),
         });
     } catch (error) {

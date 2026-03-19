@@ -43,6 +43,7 @@ export default function EditPromptPage() {
         setIsSubmitting(true);
         try {
             await updatePromptAction(id, data);
+            router.push('/');
         } catch (e) {
             console.error(e);
             alert('Failed to update prompt');

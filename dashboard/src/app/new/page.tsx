@@ -15,6 +15,7 @@ export default function NewPromptPage() {
         setIsSubmitting(true);
         try {
             await createPromptAction(data);
+            router.push('/');
         } catch (e) {
             console.error(e);
             alert('Failed to create prompt');
