@@ -35,9 +35,13 @@ if __name__ == "__main__":
     pass
 
 
-# {'message_id': '008', 'timestamp': '2023-12-23T10:12:00Z', 'sender': 'buyer456', 'text': 'GOALLL'}
+# {'message_id': '008', 'timestamp': '2023-12-23T10:12:00Z',
+#  'sender': 'buyer456', 'text': 'GOALLL'}
 
-db = firestore.Client(database=os.getenv("FIRESTORE_DATABASE"),project=os.getenv("GCP_PROJECT"))
+db = firestore.Client(
+    database=os.getenv("FIRESTORE_DATABASE"),
+    project=os.getenv("GCP_PROJECT")
+)
 
 
 def fetch_active_prompts_from_firestore():
@@ -56,29 +60,32 @@ def fetch_active_prompts_from_firestore():
 def subscribe(cloud_event: CloudEvent) -> None:
     print("Evaluating incoming Pub/Sub message")
     try:
-        decoded_str = base64.b64decode(cloud_event.data["message"]["data"]).decode(
-            "utf-8"
-        )
+        msg_data = cloud_event.data["message"]["data"]
+        decoded_str = base64.b64decode(msg_data).decode("utf-8")
 
         try:
             # 1. Try parsing as standard JSON
             message_dict = json.loads(decoded_str)
         except Exception:
             try:
-                # 2. Fallback to literal_eval for Python-style dicts (e.g., using single quotes)
+                # 2. Fallback to literal_eval for Python-style dicts
+                # (e.g., using single quotes)
                 message_dict = ast.literal_eval(decoded_str)
             except Exception:
                 # 3. If all parsing fails, set to None so it gets wrapped below
                 message_dict = None
 
-        # 4. If the payload parsed to a string/list/number instead of a dict, or failed to parse entirely, wrap it
+        # 4. If the payload parsed to a string/list/number instead of
+        # a dict, or failed to parse entirely, wrap it
         if not isinstance(message_dict, dict):
             message_dict = {"text": decoded_str}
 
         message_text = message_dict.get("text", "")
     except Exception as e:
         print(
-            json.dumps({"event": "error", "message": f"Failed to parse message: {e}"})
+            json.dumps(
+                {"event": "error", "message": f"Failed to parse message: {e}"}
+            )
         )
         return
 
@@ -112,12 +119,21 @@ def subscribe(cloud_event: CloudEvent) -> None:
             result = chain.invoke({"text": message_text})
 
             # Structured JSON Log for GCP Metrics
+            matched = False
+            reasoning = ""
+            if isinstance(result, WatchdogResult):
+                matched = result.matched
+                reasoning = result.reasoning
+            elif isinstance(result, dict):
+                matched = result.get("matched", False)
+                reasoning = result.get("reasoning", "")
+
             log_entry = {
                 "event": "watchdog_evaluation",
                 "watchdog_id": watchdog_id,
                 "watchdog_name": name,
-                "matched": result.matched,
-                "reasoning": result.reasoning,
+                "matched": matched,
+                "reasoning": reasoning,
                 "message_id": message_dict.get("message_id"),
             }
             print(json.dumps(log_entry))
