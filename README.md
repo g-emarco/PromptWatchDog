@@ -45,6 +45,12 @@
   └── .env                     # Local environment configuration
   ```
 
+  ## 🏗️ Architecture
+
+  Here is how the data flows from a user message to a live dashboard:
+
+  ![PromptWatchDog Architecture Diagram](static/architecture.png)
+
   ## 🧩 Key Components
 
   1.  **Message Bus (Pub/Sub)**: Acts as the buffer and trigger for the system. Messages published to the `messages` topic trigger the analysis.
